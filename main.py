@@ -2,54 +2,29 @@ import requests
 import sqlite3
 from datetime import datetime
 
+from database import create_tables, get_all_funds, get_installments
+
+create_tables()
+
+print(get_all_funds())
+print(get_installments(140196))
+
 scheme_code = "140196"
 url = f"https://api.mfapi.in/mf/{scheme_code}/latest"
 
 response = requests.get(url)
 data = response.json()
 
-conn = sqlite3.connect('sip_tracker.db')
-cursor = conn.cursor()
-
-cursor.execute('''
-CREATE TABLE IF NOT EXISTS funds(
-    scheme_code TEXT PRIMARY KEY,
-    fund_name TEXT
-)
-''')
-
-cursor.execute('''
-CREATE TABLE IF NOT EXISTS installments(
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    scheme_code TEXT,
-    date TEXT,
-    amount REAL,
-    units REAL,
-    nav_at_purchase REAL
-)
-''')
-
-cursor.execute("INSERT OR IGNORE INTO funds(scheme_code,fund_name) values (?,?)",(scheme_code,data['meta']['scheme_name']))
-
-# for i in liquid:
-#    cursor.execute("INSERT OR IGNORE INTO installments(scheme_code,date,amount,units,nav_at_purchase) values (?,?,?,?,?)",(scheme_code,datetime.strftime(i['date'],'%d-%m-%y'),i['amount'],i['units'],i['nav_at_purchase']))
-
-cursor.execute("SELECT * FROM funds")
-rows_funds = cursor.fetchall()
-
-for row in rows_funds:
-    print(row)
-
-cursor.execute("SELECT * FROM installments")
-rows_installments = cursor.fetchall()
-
-for row in rows_installments:
-    print(row)
-
 print(data)
 print(data['meta']['scheme_name'])
 print(data['data'][0]['nav'])
 print(data['data'][0]['date'])
+
+conn = sqlite3.connect('sip_tracker.db')
+cursor = conn.cursor()
+
+cursor.execute("SELECT * FROM installments")
+rows_installments = cursor.fetchall()
 
 liquid = []
 
@@ -90,8 +65,3 @@ for i in liquid:
     max_withdrawable_amount += i['units']*current_nav
 
 print(f"Maximum withdrawable amount is: {max_withdrawable_amount}")
-
-
-
-conn.commit()
-conn.close()
