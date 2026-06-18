@@ -1,7 +1,5 @@
 from database import add_fund,add_instalments, create_tables
 
-create_tables()
-
 print("1. Add new fund")
 print("2. Add instalment to existing fund")
 
