@@ -27,8 +27,12 @@ class MyApp(App):
         
         if check_str == "":
             self.label.text = "Investment added successfully"
+            self.scheme_input.text = ""
+            self.date_input.text = ""
+            self.amount_input.text = ""
         else:
             self.label.text = check_str
+
     
     def build(self):
         outer_layout = BoxLayout(orientation = 'vertical')
@@ -55,7 +59,7 @@ class MyApp(App):
         inner_layout3.add_widget(Label(text="Enter the amount you have invested:",size_hint=(0.3,1)))
         inner_layout3.add_widget(self.amount_input)
 
-        outer_layout.add_widget(Button(text="Click to submit",size_hint=(1,0.2),on_press=self.on_button_click))
-        return outer_layout
+        outer_layout.add_widget(Button(text="Click to submit",size_hint=(1,0.2),on_press=self.on_button_click,background_color=(0.2,0.6,0.9,1)))
+        #return outer_layout
     
 MyApp().run()
