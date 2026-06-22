@@ -48,7 +48,7 @@ for row_funds in get_all_funds():
         return_percent = (profit/i['amount'])*100
         total_investment_fund += i['amount']
         
-        print(f"\nDate: {i['date']}" )
+        print(f"\nDate: {datetime.strftime(i['date'],"%d-%m-%y")}")
         print(f"Invested amount: {i['amount']}")
         print(f"Current value: {current_value:.2f}")
         print(f"Return: {profit:.2f}({return_percent:.2f}%)\n")
@@ -59,7 +59,7 @@ for row_funds in get_all_funds():
 
     overall_returns += fund_profit
     overall_investment += total_investment_fund
-
+    
     local_withdrawable_amount = 0.0
 
     local_withdrawable_profit = 0.0
