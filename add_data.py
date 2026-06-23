@@ -7,23 +7,21 @@ def add_new_fund(scheme_code,fund_name):
 
 def add_new_instalments(scheme_code,input_date,amount):
     try:
-        scheme_code = scheme_code
+        url = f"https://api.mfapi.in/mf/{scheme_code}"
+        response = requests.get(url)
+        data = response.json()
     except:
         message = "Wrong scheme code"
         return message
-    
-    url = f"https://api.mfapi.in/mf/{scheme_code}"
-    response = requests.get(url)
-    data = response.json()
-    
+
     fund_present = False
-    for rows in get_all_funds:
+    for rows in get_all_funds():
         if scheme_code == rows[0]:
             fund_present = True
         
     if not fund_present:
         add_new_fund(scheme_code,data['meta']['scheme_name'])
-        
+
     date = input_date[:-2] + "20" + input_date[-2:]
 
     check_date = datetime.strptime(date,"%d-%m-%Y")
@@ -44,7 +42,7 @@ def add_new_instalments(scheme_code,input_date,amount):
 
         units = amount/nav_at_purchase
 
-        add_instalments(scheme_code,date,amount,units,nav_at_purchase)
+        add_instalments(scheme_code,input_date,amount,units,nav_at_purchase)
         message = "Successfully added"
         return message
     else:

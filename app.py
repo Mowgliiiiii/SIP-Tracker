@@ -4,6 +4,8 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.textinput import TextInput
 
+from add_data import add_new_instalments
+
 from datetime import datetime
 
 class MyApp(App):
@@ -26,7 +28,9 @@ class MyApp(App):
             check_str += "Please enter the valid amount"
         
         if check_str == "":
-            self.root.ids.top_label.text = "Investment added successfully"
+            message = add_new_instalments(scheme_code,self.root.ids.date_input.text,amount)
+            
+            self.root.ids.top_label.text = message
             self.root.ids.scheme_input.text = ""
             self.root.ids.date_input.text = ""
             self.root.ids.amount_input.text = ""

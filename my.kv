@@ -1,50 +1,77 @@
-BoxLayout:
-    orientation: 'vertical'
+ScreenManager:
+    Screen:
+        name: 'add_instalment'
+        BoxLayout:
+            orientation: 'vertical'
+            
+            Label:
+                id: top_label
+                text: "Get Started"
+                size_hint: (1,0.2)
+
+            BoxLayout:
+                orientation: 'horizontal'
+                size_hint: (1,0.2)
+
+                Label:
+                    text: "Scheme Code: "
+                    size_hint: (0.3,1)
+
+                TextInput:
+                    id: scheme_input
+                    size_hint: (0.7,1)
+
+            BoxLayout:
+                orientation: 'horizontal'
+                size_hint: (1,0.2)
+
+                Label:
+                    text: "Date:"
+                    size_hint: (0.3,1)
+
+                TextInput:
+                    id: date_input
+                    size_hint: (0.7,1)
+                    hint_text: "Format: dd-mm-yy"
+
+            BoxLayout:
+                orientation: 'horizontal'
+                size_hint: (1,0.2)
+
+                Label:
+                    text: "Amount: "
+                    size_hint: (0.3,1)
+
+                TextInput:
+                    id: amount_input
+                    size_hint: (0.7,1)
+
+            BoxLayout:
+                orientation: 'horizontal'
+                size_hint: (1,0.2)
+
+                Button:
+                    text: "Portfolio"
+                    size_hint: (0.3,1)
+                    on_press: app.root.current = 'portfolio'
+                
+                Button:
+                    text: "Click to submit"
+                    size_hint: (0.7,1)
+                    background_color: (0.2,0.6,0.9,1)
+                    on_press: app.on_button_click()
     
-    Label:
-        id: top_label
-        text: "Get Started"
-        size_hint: (1,0.2)
+    Screen:
+        name: 'portfolio'
 
-    BoxLayout:
-        orientation: 'horizontal'
-        size_hint: (1,0.2)
+        BoxLayout:
+            orientation: 'vertical'
 
-        Label:
-            text: "Scheme Code: "
-            size_hint: (0.3,1)
+            Label:
+                text: 'Portfolio Screen'
+                size_hint: (1,0.5)
 
-        TextInput:
-            id: scheme_input
-            size_hint: (0.7,1)
-
-    BoxLayout:
-        orientation: 'horizontal'
-        size_hint: (1,0.2)
-
-        Label:
-            text: "Date:"
-            size_hint: (0.3,1)
-
-        TextInput:
-            id: date_input
-            size_hint: (0.7,1)
-            hint_text: "Format: dd-mm-yy"
-
-    BoxLayout:
-        orientation: 'horizontal'
-        size_hint: (1,0.2)
-
-        Label:
-            text: "Amount: "
-            size_hint: (0.3,1)
-
-        TextInput:
-            id: amount_input
-            size_hint: (0.7,1)
-
-    Button:
-        text: "Click to submit"
-        size_hint: (1,0.2)
-        background_color: (0.2,0.6,0.9,1)
-        on_press: app.on_button_click()
+            Button:
+                text: 'Back'
+                on_press: app.root.current = 'add_instalment'
+                size_hint: (1,0.5)
