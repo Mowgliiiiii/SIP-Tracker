@@ -1,77 +1,41 @@
 ScreenManager:
     Screen:
-        name: 'add_instalment'
+        name: 'Main'
+
         BoxLayout:
+            padding: [12,15,12,6]
             orientation: 'vertical'
-            
-            Label:
-                id: top_label
-                text: "Get Started"
-                size_hint: (1,0.2)
 
-            BoxLayout:
-                orientation: 'horizontal'
-                size_hint: (1,0.2)
-
-                Label:
-                    text: "Scheme Code: "
-                    size_hint: (0.3,1)
-
-                TextInput:
-                    id: scheme_input
-                    size_hint: (0.7,1)
-
-            BoxLayout:
-                orientation: 'horizontal'
-                size_hint: (1,0.2)
-
-                Label:
-                    text: "Date:"
-                    size_hint: (0.3,1)
-
-                TextInput:
-                    id: date_input
-                    size_hint: (0.7,1)
-                    hint_text: "Format: dd-mm-yy"
-
-            BoxLayout:
-                orientation: 'horizontal'
-                size_hint: (1,0.2)
-
-                Label:
-                    text: "Amount: "
-                    size_hint: (0.3,1)
-
-                TextInput:
-                    id: amount_input
-                    size_hint: (0.7,1)
-
-            BoxLayout:
-                orientation: 'horizontal'
-                size_hint: (1,0.2)
-
-                Button:
-                    text: "Portfolio"
-                    size_hint: (0.3,1)
-                    on_press: app.root.current = 'portfolio'
+            ScrollView:
+                size_hint: (1,1)
                 
-                Button:
-                    text: "Click to submit"
-                    size_hint: (0.7,1)
-                    background_color: (0.2,0.6,0.9,1)
-                    on_press: app.on_button_click()
-    
+                GridLayout:
+                    id: fund_list
+                    size_hint: (1,0.65)
+                    cols: 1
+                    size_hint_y: None
+                    height: self.minimum_height
+                    spacing: 5
+
+                    Label:
+                        text: 'Dashboard'
+                        size_hint_y: None
+                        height: 120
+                    
+                    
     Screen:
-        name: 'portfolio'
+        name: 'fund_detail'
 
         BoxLayout:
             orientation: 'vertical'
+            padding: [12,15,12,6]
 
             Label:
-                text: 'Portfolio Screen'
-                size_hint: (1,0.5)
+                id: fund_name
+                size_hint: (1,0.1)
+            Label:
+                id: totaol_profit
+                size_hint: (1,0.1)
+        
 
-            Button:
-                text: 'Back'
-                on_press: app.root.current = 'add_instalment'
-                size_hint: (1,0.5)
+

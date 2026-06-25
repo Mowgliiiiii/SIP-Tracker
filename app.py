@@ -3,12 +3,42 @@ from kivy.uix.label import Label
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.textinput import TextInput
+from kivy.uix.widget import Widget
 
+from database import get_all_funds, get_instalments
 from add_data import add_new_instalments
-
 from datetime import datetime
 
 class MyApp(App):
+    def load_main_screen(self):
+        for row in get_all_funds():
+            btn = Button(text=row[1], size_hint_y=None, height=50)
+            btn.bind(on_press=lambda instance, sc=row[0]: self.open_fund_detail(sc))
+            self.root.ids.fund_list.add_widget(btn)
+
+        wrapper = BoxLayout(size_hint_y=None, height=60)
+        wrapper.add_widget(Widget())  # left spacer
+        add_fund_btn = Button(text='Add Fund', size_hint=(0.3, 1))
+        wrapper.add_widget(add_fund_btn)
+        wrapper.add_widget(Widget())  # right spacer
+        self.root.ids.fund_list.add_widget(wrapper)
+
+    def open_fund_detail(self, scheme_code):
+        print(scheme_code)
+        self.root.current = 'fund_detail'
+
+    def on_start(self):
+        import requests
+        response = requests.get("https://api.mfapi.in/mf")
+        self.all_funds = response.json()
+        self.load_main_screen()
+        print(self.search_funds("parag parikh"))
+    
+    def search_funds(self, query):
+        query = query.lower()
+        results = [f for f in self.all_funds if query in f['schemeName'].lower()]
+        return results[:10]
+        
     def on_button_click(self):
         check_str = ""
 
