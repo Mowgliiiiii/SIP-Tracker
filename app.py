@@ -4,11 +4,14 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.textinput import TextInput
 from kivy.uix.widget import Widget
+from kivy.uix.popup import Popup
 
 from database import get_all_funds, get_instalments
 from add_data import add_new_instalments
 from datetime import datetime
 import requests
+import json
+import os
 
 class MyApp(App):
     def load_main_screen(self):
@@ -81,7 +84,7 @@ class MyApp(App):
 
         for row in instalments_detail:
             text_instalment = (
-                f"Date: {row['date']}\n"
+                f"Date: {datetime.strftime(row['date'],'%d-%m-%y')}\n"
                 f"Amount invested: {row['amount']:.2f}\n"
                 f"Current value: {row['current value']}\n"
                 f"Return: {row['instalment return']}({row['instalment return percent']}%)"
@@ -93,48 +96,75 @@ class MyApp(App):
         wrapper = BoxLayout(size_hint_y=None, height=60)
         wrapper.add_widget(Widget())  # left spacer
         add_instalment_btn = Button(text='Add instalment', size_hint=(0.3, 1))
+        add_instalment_btn.bind(on_release=lambda instance: self.add_instalment_popup(scheme_code))
         wrapper.add_widget(add_instalment_btn)
         wrapper.add_widget(Widget())  # right spacer
         self.root.ids.instalment_list.add_widget(wrapper)
 
     def on_start(self):
-        import requests
-        response = requests.get("https://api.mfapi.in/mf")
-        self.all_funds = response.json()
+        if os.path.exists('funds_cache.json'):
+            with open('funds_cache.json','r') as f:
+                self.all_funds = json.load(f)
+
+        else:
+            response = requests.get("https://api.mfapi.in/mf")
+            self.all_funds = response.json()
+            with open('funds_cache.json','w') as f:
+                json.dump(self.all_funds,f)
+
         self.load_main_screen()
-    
+        
     def search_funds(self, query):
         query = query.lower()
         results = [f for f in self.all_funds if query in f['schemeName'].lower()]
         return results[:10]
-        
-    def on_button_click(self):
-        check_str = ""
+    
+    def add_instalment_popup(self,scheme_code):
+        popup = Popup(title='Add Instalment', content=self.add_instalment_element(scheme_code),size_hint=(0.8,0.5))
+        popup.open()
 
-        try:
-            scheme_code = int(self.root.ids.scheme_input.text)
-        except:
-            check_str += "Please enter the valid scheme code\n"
+    def add_instalment_element(self,scheme_code):
+        add_instalment_screen = BoxLayout(orientation='vertical')
+        self.top_label = Label(text='Enter the details',size_hint=(1,0.3))
+        add_instalment_screen.add_widget(self.top_label)
+        
+        row1 = BoxLayout(orientation='horizontal',size_hint=(1,0.2))
+        row1.add_widget(Label(text='Date: ',size_hint=(0.3,1)))
+        self.popup_date = TextInput(hint_text='in dd/mm/yy format',size_hint=(0.7,1))
+        row1.add_widget(self.popup_date)
+        add_instalment_screen.add_widget(row1)
+
+        row2 = BoxLayout(orientation='horizontal',size_hint=(1,0.2))
+        row2.add_widget(Label(text='Amount invested: ',size_hint=(0.3,1)))
+        self.popup_amount = TextInput(size_hint=(0.7,1))
+        row2.add_widget(self.popup_amount)
+        add_instalment_screen.add_widget(row2)
+
+        add_instalment_screen.add_widget(Button(text='Submit',size_hint=(0.25,0.2),pos_hint={'center_x': 0.5},on_release=lambda instance: self.instalment_submit(scheme_code)))
+
+        return add_instalment_screen
+        
+    def instalment_submit(self,scheme_code):
+        check_str = ""
         
         try:
-            date_input = datetime.strptime(self.root.ids.date_input.text, "%d-%m-%y")
+            date_input = datetime.strptime(self.popup_date.text, "%d-%m-%y")
         except:
             check_str += "Please enter the date in the format: dd-mm-yy\n"
 
         try:
-            amount = float(self.root.ids.amount_input.text)
+            amount = float(self.popup_amount.text)
         except:
             check_str += "Please enter the valid amount"
         
         if check_str == "":
-            message = add_new_instalments(scheme_code,self.root.ids.date_input.text,amount)
+            message = add_new_instalments(scheme_code,self.popup_date.text,self.popup_amount.text)
             
-            self.root.ids.top_label.text = message
-            self.root.ids.scheme_input.text = ""
-            self.root.ids.date_input.text = ""
-            self.root.ids.amount_input.text = ""
+            self.top_label.text = message
+            self.popup_date.text = ""
+            self.popup_amount.text = ""
         else:
-            self.root.ids.top_label.text = check_str
+            self.top_label.text = check_str
         
     def build(self):
         pass

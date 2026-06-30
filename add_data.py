@@ -40,7 +40,7 @@ def add_new_instalments(scheme_code,input_date,amount):
     if nav_availble:
         nav_at_purchase = float(data['data'][date_loop]['nav'])
 
-        units = amount/nav_at_purchase
+        units = float(amount)/nav_at_purchase
 
         add_instalments(scheme_code,input_date,amount,units,nav_at_purchase)
         message = "Successfully added"
