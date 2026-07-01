@@ -67,20 +67,38 @@ class MyApp(App):
         local_withdrawable_amount = 0.0
 
         local_withdrawable_profit = 0.0
-        for i in fund:
+        for i in reversed(fund):
             if(current_nav<i['nav_at_purchase']):
                 break
             
             local_withdrawable_amount += i['units']*current_nav
             local_withdrawable_profit += i['units']*current_nav - i['amount']
 
-        return fund
+        return{ 
+            'instalments': fund,
+            'fund investment': total_investment_fund,
+            'fund return': fund_profit,
+            'fund return percent': fund_profit_percent,
+            'fund withdrawable amount': local_withdrawable_amount,
+            'fund withdrawable profit': local_withdrawable_profit
+        }
 
     def open_fund_detail(self, scheme_code):
         self.root.current = 'fund_detail'
         self.root.ids.instalment_list.clear_widgets()
 
-        instalments_detail = self.load_fund_detail(scheme_code)
+        fund_data = self.load_fund_detail(scheme_code)
+        instalments_detail = fund_data['instalments']
+
+        dashboard_text = (
+            f"Total investment: {fund_data['fund investment']:.2f}\n"
+            f"Total return: {fund_data['fund return']:.2f} ({fund_data['fund return percent']:.2f}%)\n"
+            f"Withdrawable amount: {fund_data['fund withdrawable amount']:.2f}\n"
+            f"Withdrawable profit: {fund_data['fund withdrawable profit']:.2f}"
+        )
+
+        dashboard = Label(text=dashboard_text, size_hint_y=None, height=120)
+        self.root.ids.instalment_list.add_widget(dashboard)
 
         for row in instalments_detail:
             text_instalment = (
@@ -163,6 +181,8 @@ class MyApp(App):
             self.top_label.text = message
             self.popup_date.text = ""
             self.popup_amount.text = ""
+
+            self.open_fund_detail(scheme_code)
         else:
             self.top_label.text = check_str
         
