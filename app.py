@@ -5,9 +5,10 @@ from kivy.uix.button import Button
 from kivy.uix.textinput import TextInput
 from kivy.uix.widget import Widget
 from kivy.uix.popup import Popup
+from kivy.uix.gridlayout import GridLayout
 
 from database import get_all_funds, get_instalments
-from add_data import add_new_instalments
+from add_data import add_new_instalments, add_new_fund
 from datetime import datetime
 import requests
 import json
@@ -15,6 +16,8 @@ import os
 
 class MyApp(App):
     def load_main_screen(self):
+        self.load_main_dashboard()
+
         for row in get_all_funds():
             btn = Button(text=row[1], size_hint_y=None, height=50)
             btn.bind(on_release=lambda instance, sc=row[0]: self.open_fund_detail(sc))
@@ -23,6 +26,7 @@ class MyApp(App):
         wrapper = BoxLayout(size_hint_y=None, height=60)
         wrapper.add_widget(Widget())  # left spacer
         add_fund_btn = Button(text='Add Fund', size_hint=(0.3, 1))
+        add_fund_btn.bind(on_release=lambda instance: self.add_fund_popup())
         wrapper.add_widget(add_fund_btn)
         wrapper.add_widget(Widget())  # right spacer
         self.root.ids.fund_list.add_widget(wrapper)
@@ -62,7 +66,10 @@ class MyApp(App):
             i['instalment return'] = f"{profit:.2f}"
             i['instalment return percent'] = f"{return_percent:.2f}"
 
-        fund_profit_percent = (fund_profit/total_investment_fund)*100
+        if(total_investment_fund!=0):
+            fund_profit_percent = (fund_profit/total_investment_fund)*100
+        else:
+            fund_profit_percent = 0
         
         local_withdrawable_amount = 0.0
 
@@ -131,11 +138,6 @@ class MyApp(App):
                 json.dump(self.all_funds,f)
 
         self.load_main_screen()
-        
-    def search_funds(self, query):
-        query = query.lower()
-        results = [f for f in self.all_funds if query in f['schemeName'].lower()]
-        return results[:10]
     
     def add_instalment_popup(self,scheme_code):
         popup = Popup(title='Add Instalment', content=self.add_instalment_element(scheme_code),size_hint=(0.8,0.5))
@@ -186,6 +188,73 @@ class MyApp(App):
         else:
             self.top_label.text = check_str
         
+    def load_main_dashboard(self):
+        overall_return = 0.0
+        overall_instalment = 0.0
+        overall_withdrawable_amount = 0.0
+        overall_withdrawable_profit = 0.0
+        
+        for row in get_all_funds():
+            scheme_code = row[0]
+            fund_detail = self.load_fund_detail(scheme_code)
+
+            overall_instalment+=fund_detail['fund investment']
+            overall_return+=fund_detail['fund return']
+            overall_withdrawable_amount+=fund_detail['fund withdrawable amount']
+            overall_withdrawable_profit+=fund_detail['fund withdrawable profit']
+
+        overall_return_percent=(overall_return/overall_instalment)*100
+
+        main_dashboard_content = (
+            f"Total investment: {overall_instalment:.2f}\n"
+            f"Return: {overall_return:.2f} ({overall_return_percent:.2f}%)\n"
+            f"Withdrawable amount: {overall_withdrawable_amount:.2f}\n"
+            f"Withdrawable profit: {overall_withdrawable_profit:.2f}"
+        )
+
+        self.root.ids.main_dashboard.text = main_dashboard_content
+
+    def add_fund_popup(self):
+        popup = Popup(title='Add Fund', content=self.add_fund_element(),size_hint=(0.84,0.6))
+        popup.open()
+
+    def add_fund_element(self):
+        add_fund_screen = BoxLayout(orientation='vertical')
+        
+        self.search_input = TextInput(hint_text='Search Fund Name', size_hint=(1, None), height = 40)
+        self.search_layout = GridLayout(spacing=10, cols=1, size_hint_x=1, size_hint_y=None, height=290)
+        self.search_layout.bind(minimum_height=self.search_layout.setter('height'))
+        
+        self.search_input.bind(text=lambda instance, query: self.filter_funds(query))
+        
+        add_fund_screen.add_widget(self.search_input)
+        add_fund_screen.add_widget(self.search_layout)
+
+        self.popup_add_fund_btn = Button(text="Add Fund", size_hint=(0.25,None), height=40, pos_hint={'center_x':0.5},disabled=True)
+        self.popup_add_fund_btn.bind(on_release=lambda instance: add_new_fund(self.search_input.text))
+        add_fund_screen.add_widget(self.popup_add_fund_btn)
+        
+        return add_fund_screen
+   
+    def filter_funds(self,query):
+        self.search_layout.clear_widgets()
+        top_search = self.search_funds(query)
+        for i in top_search:
+            self.search_layout.add_widget(
+                Button(
+                    text=i['schemeName'],
+                    size_hint_y=None,
+                    height=20,
+                    on_release=lambda instance, name=i['schemeName']: [setattr(self.search_input, "text", name), setattr(self.popup_add_fund_btn, 'disabled', False)]
+                )
+            )
+
+    def search_funds(self, query):
+        query = query.lower()
+        results = [f for f in self.all_funds if query in f['schemeName'].lower()]
+        results.sort(key=lambda f: (not f['schemeName'].lower().startswith(query), f['schemeName'].lower()))
+        return results[:10]
+    
     def build(self):
         pass
     

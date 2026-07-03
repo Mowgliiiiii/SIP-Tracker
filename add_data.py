@@ -1,26 +1,23 @@
 import requests
+import json
 from datetime import datetime
 from database import add_fund,add_instalments, get_all_funds
 
-def add_new_fund(scheme_code,fund_name):
+def add_new_fund(fund_name):
+    with open('funds_cache.json','r') as f:
+        all_funds = json.load(f)
+
+    for i in all_funds:
+        if(fund_name==i['schemeName']):
+            scheme_code = i['schemeCode']
+            break
+        
     add_fund(scheme_code,fund_name)
 
 def add_new_instalments(scheme_code,input_date,amount):
-    try:
-        url = f"https://api.mfapi.in/mf/{scheme_code}"
-        response = requests.get(url)
-        data = response.json()
-    except:
-        message = "Wrong scheme code"
-        return message
-
-    fund_present = False
-    for rows in get_all_funds():
-        if scheme_code == rows[0]:
-            fund_present = True
-        
-    if not fund_present:
-        add_new_fund(scheme_code,data['meta']['scheme_name'])
+    url = f"https://api.mfapi.in/mf/{scheme_code}"
+    response = requests.get(url)
+    data = response.json()
 
     date = input_date[:-2] + "20" + input_date[-2:]
 
