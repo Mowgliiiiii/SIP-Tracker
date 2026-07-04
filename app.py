@@ -15,7 +15,24 @@ import json
 import os
 
 class MyApp(App):
+    def on_start(self):
+        if os.path.exists('funds_cache.json'):
+            with open('funds_cache.json','r') as f:
+                self.all_funds = json.load(f)
+
+        else:
+            response = requests.get("https://api.mfapi.in/mf")
+            self.all_funds = response.json()
+            with open('funds_cache.json','w') as f:
+                json.dump(self.all_funds,f)
+
+        self.load_main_screen()
+    
     def load_main_screen(self):
+        self.root.ids.fund_list.clear_widgets()
+        self.main_dashboard = Label(text='Dashboard', size_hint_y=None, height=150)
+        self.root.ids.fund_list.add_widget(self.main_dashboard)
+        
         self.load_main_dashboard()
 
         for row in get_all_funds():
@@ -25,9 +42,16 @@ class MyApp(App):
 
         wrapper = BoxLayout(size_hint_y=None, height=60)
         wrapper.add_widget(Widget())  # left spacer
-        add_fund_btn = Button(text='Add Fund', size_hint=(0.3, 1))
+        
+        add_fund_btn = Button(text='Add Fund', size_hint=(0.4,1))
         add_fund_btn.bind(on_release=lambda instance: self.add_fund_popup())
         wrapper.add_widget(add_fund_btn)
+
+        wrapper.add_widget(Widget(size_hint=(0.1,1))) 
+        
+        delete_fund_btn = Button(text='Delete fund',size_hint=(0.4,1))
+        wrapper.add_widget(delete_fund_btn)
+        
         wrapper.add_widget(Widget())  # right spacer
         self.root.ids.fund_list.add_widget(wrapper)
 
@@ -126,19 +150,6 @@ class MyApp(App):
         wrapper.add_widget(Widget())  # right spacer
         self.root.ids.instalment_list.add_widget(wrapper)
 
-    def on_start(self):
-        if os.path.exists('funds_cache.json'):
-            with open('funds_cache.json','r') as f:
-                self.all_funds = json.load(f)
-
-        else:
-            response = requests.get("https://api.mfapi.in/mf")
-            self.all_funds = response.json()
-            with open('funds_cache.json','w') as f:
-                json.dump(self.all_funds,f)
-
-        self.load_main_screen()
-    
     def add_instalment_popup(self,scheme_code):
         popup = Popup(title='Add Instalment', content=self.add_instalment_element(scheme_code),size_hint=(0.8,0.5))
         popup.open()
@@ -203,7 +214,7 @@ class MyApp(App):
             overall_withdrawable_amount+=fund_detail['fund withdrawable amount']
             overall_withdrawable_profit+=fund_detail['fund withdrawable profit']
 
-        overall_return_percent=(overall_return/overall_instalment)*100
+        overall_return_percent=(overall_return/overall_instalment)*100 if overall_instalment!=0 else 0
 
         main_dashboard_content = (
             f"Total investment: {overall_instalment:.2f}\n"
@@ -212,11 +223,11 @@ class MyApp(App):
             f"Withdrawable profit: {overall_withdrawable_profit:.2f}"
         )
 
-        self.root.ids.main_dashboard.text = main_dashboard_content
+        self.main_dashboard.text = main_dashboard_content
 
     def add_fund_popup(self):
-        popup = Popup(title='Add Fund', content=self.add_fund_element(),size_hint=(0.84,0.6))
-        popup.open()
+        self.popup_fund = Popup(title='Add Fund', content=self.add_fund_element(),size_hint=(0.84,0.6))
+        self.popup_fund.open()
 
     def add_fund_element(self):
         add_fund_screen = BoxLayout(orientation='vertical')
@@ -231,12 +242,18 @@ class MyApp(App):
         add_fund_screen.add_widget(self.search_layout)
 
         self.popup_add_fund_btn = Button(text="Add Fund", size_hint=(0.25,None), height=40, pos_hint={'center_x':0.5},disabled=True)
-        self.popup_add_fund_btn.bind(on_release=lambda instance: add_new_fund(self.search_input.text))
+        self.popup_add_fund_btn.bind(on_release=lambda instance: self.new_fund_submit(self.search_input.text))
         add_fund_screen.add_widget(self.popup_add_fund_btn)
         
         return add_fund_screen
-   
+    
+    def new_fund_submit(self,fund_name):
+        add_new_fund(fund_name)
+        self.popup_fund.dismiss()
+        self.load_main_screen()
+
     def filter_funds(self,query):
+        self.popup_add_fund_btn.disabled = True
         self.search_layout.clear_widgets()
         top_search = self.search_funds(query)
         for i in top_search:

@@ -25,6 +25,12 @@ def create_tables():
     conn.commit()
     conn.close()
 
+def delete_fund(exist_scheme):
+    conn = sqlite3.connect('sip_tracker.db')
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM funds WHERE scheme_code = ?", (exist_scheme,))
+    conn.commit()
+    conn.close()
 
 def get_all_funds():
     conn = sqlite3.connect('sip_tracker.db')

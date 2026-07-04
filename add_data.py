@@ -13,7 +13,7 @@ def add_new_fund(fund_name):
             break
         
     add_fund(scheme_code,fund_name)
-
+   
 def add_new_instalments(scheme_code,input_date,amount):
     url = f"https://api.mfapi.in/mf/{scheme_code}"
     response = requests.get(url)
