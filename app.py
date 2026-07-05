@@ -7,7 +7,7 @@ from kivy.uix.widget import Widget
 from kivy.uix.popup import Popup
 from kivy.uix.gridlayout import GridLayout
 
-from database import get_all_funds, get_instalments
+from database import get_all_funds, get_instalments, delete_fund
 from add_data import add_new_instalments, add_new_fund
 from datetime import datetime
 import requests
@@ -50,6 +50,7 @@ class MyApp(App):
         wrapper.add_widget(Widget(size_hint=(0.1,1))) 
         
         delete_fund_btn = Button(text='Delete fund',size_hint=(0.4,1))
+        delete_fund_btn.bind(on_release=lambda instance: self.delete_fund_popup())
         wrapper.add_widget(delete_fund_btn)
         
         wrapper.add_widget(Widget())  # right spacer
@@ -78,9 +79,11 @@ class MyApp(App):
 
         fund_profit = 0.0
         total_investment_fund = 0.0
+        fund_current_value = 0.0
 
         for i in fund:
             current_value = i['units']*current_nav
+            fund_current_value += current_value
             profit = current_value - i['amount']
             fund_profit+=profit
             return_percent = (profit/i['amount'])*100
@@ -108,6 +111,7 @@ class MyApp(App):
         return{ 
             'instalments': fund,
             'fund investment': total_investment_fund,
+            'fund current value': fund_current_value,
             'fund return': fund_profit,
             'fund return percent': fund_profit_percent,
             'fund withdrawable amount': local_withdrawable_amount,
@@ -123,6 +127,7 @@ class MyApp(App):
 
         dashboard_text = (
             f"Total investment: {fund_data['fund investment']:.2f}\n"
+            f"Current value: {fund_data['fund current value']:.2f}\n"
             f"Total return: {fund_data['fund return']:.2f} ({fund_data['fund return percent']:.2f}%)\n"
             f"Withdrawable amount: {fund_data['fund withdrawable amount']:.2f}\n"
             f"Withdrawable profit: {fund_data['fund withdrawable profit']:.2f}"
@@ -202,6 +207,7 @@ class MyApp(App):
     def load_main_dashboard(self):
         overall_return = 0.0
         overall_instalment = 0.0
+        overall_current_value = 0.0
         overall_withdrawable_amount = 0.0
         overall_withdrawable_profit = 0.0
         
@@ -210,6 +216,7 @@ class MyApp(App):
             fund_detail = self.load_fund_detail(scheme_code)
 
             overall_instalment+=fund_detail['fund investment']
+            overall_current_value+=fund_detail['fund current value']
             overall_return+=fund_detail['fund return']
             overall_withdrawable_amount+=fund_detail['fund withdrawable amount']
             overall_withdrawable_profit+=fund_detail['fund withdrawable profit']
@@ -218,6 +225,7 @@ class MyApp(App):
 
         main_dashboard_content = (
             f"Total investment: {overall_instalment:.2f}\n"
+            f"Current value: {overall_current_value:.2f}\n"
             f"Return: {overall_return:.2f} ({overall_return_percent:.2f}%)\n"
             f"Withdrawable amount: {overall_withdrawable_amount:.2f}\n"
             f"Withdrawable profit: {overall_withdrawable_profit:.2f}"
@@ -226,8 +234,8 @@ class MyApp(App):
         self.main_dashboard.text = main_dashboard_content
 
     def add_fund_popup(self):
-        self.popup_fund = Popup(title='Add Fund', content=self.add_fund_element(),size_hint=(0.84,0.6))
-        self.popup_fund.open()
+        self.popup_add_fund = Popup(title='Add Fund', content=self.add_fund_element(),size_hint=(0.84,0.6))
+        self.popup_add_fund.open()
 
     def add_fund_element(self):
         add_fund_screen = BoxLayout(orientation='vertical')
@@ -249,7 +257,7 @@ class MyApp(App):
     
     def new_fund_submit(self,fund_name):
         add_new_fund(fund_name)
-        self.popup_fund.dismiss()
+        self.popup_add_fund.dismiss()
         self.load_main_screen()
 
     def filter_funds(self,query):
@@ -272,6 +280,57 @@ class MyApp(App):
         results.sort(key=lambda f: (not f['schemeName'].lower().startswith(query), f['schemeName'].lower()))
         return results[:10]
     
+    def delete_fund_element(self):
+        self.selected_delete_fund = None
+        self.selected_button = None
+
+        delete_layout = GridLayout(cols=1, spacing=5, size_hint_y=None)
+        delete_layout.bind(minimum_height=delete_layout.setter("height"))
+
+        for row in get_all_funds():
+            btn = Button(
+                text=row[1],
+                size_hint_y=None,
+                height=30,
+                color=(0,0,0,1)
+            )
+
+            btn.bind(
+                on_release=lambda instance, sc=row[0]: self.select_delete_fund(instance,sc)
+            )
+
+            delete_layout.add_widget(btn)
+
+        wrapper = BoxLayout(size_hint_y=None, height=60)
+        wrapper.add_widget(Widget())
+        self.delete_btn = Button(text="Delete Fund", size_hint=(0.4, 1),disabled=True)
+        self.delete_btn.bind(on_release=lambda instance: self.post_delete_fund(self.selected_delete_fund))
+        wrapper.add_widget(self.delete_btn)
+        wrapper.add_widget(Widget())
+
+        delete_layout.add_widget(wrapper)
+
+        return delete_layout
+
+    def select_delete_fund(self, button, scheme_code):
+        self.delete_btn.disabled = False
+        self.selected_delete_fund = scheme_code
+
+        if self.selected_button:
+            self.selected_button.background_color = (1, 1, 1, 1)
+
+        button.background_color = (0.2, 0.6, 1, 1)
+        self.selected_button = button
+
+    def delete_fund_popup(self):
+        self.popup_delete_fund = Popup(title='Delete Fund', content=self.delete_fund_element(),size_hint=(0.84,0.6))
+        self.popup_delete_fund.open()
+
+    def post_delete_fund(self,scheme_code):
+        delete_fund(scheme_code)
+        self.popup_delete_fund.dismiss()
+        self.load_main_screen()
+        
     def build(self):
         pass
     
