@@ -6,8 +6,10 @@ from kivy.uix.textinput import TextInput
 from kivy.uix.widget import Widget
 from kivy.uix.popup import Popup
 from kivy.uix.gridlayout import GridLayout
+from kivy.uix.scrollview import ScrollView
+from kivy.core.window import Window
 
-from database import get_all_funds, get_instalments, delete_fund
+from database import get_all_funds, get_instalments, delete_fund, delete_instalment
 from add_data import add_new_instalments, add_new_fund
 from datetime import datetime
 import requests
@@ -15,7 +17,17 @@ import json
 import os
 
 class MyApp(App):
+    def styled_button(self, text, **kwargs):
+        btn = Button(text=text, **kwargs)
+        btn.halign = 'center'
+        btn.valign = 'middle'
+        btn.bind(size=lambda instance, value: setattr(instance, 'text_size', (instance.width, None)))
+        btn.bind(texture_size=lambda instance, value: setattr(instance, 'height', max(value[1] + 20, 30)))
+        return btn
+
     def on_start(self):
+        Window.clearcolor = (0.03,0.03,0.03,1)
+
         if os.path.exists('funds_cache.json'):
             with open('funds_cache.json','r') as f:
                 self.all_funds = json.load(f)
@@ -36,20 +48,20 @@ class MyApp(App):
         self.load_main_dashboard()
 
         for row in get_all_funds():
-            btn = Button(text=row[1], size_hint_y=None, height=50)
+            btn = self.styled_button(row[1], size_hint_y=None)
             btn.bind(on_release=lambda instance, sc=row[0]: self.open_fund_detail(sc))
             self.root.ids.fund_list.add_widget(btn)
 
         wrapper = BoxLayout(size_hint_y=None, height=60)
         wrapper.add_widget(Widget())  # left spacer
         
-        add_fund_btn = Button(text='Add Fund', size_hint=(0.4,1))
+        add_fund_btn = self.styled_button('Add Fund', size_hint_x=0.4)
         add_fund_btn.bind(on_release=lambda instance: self.add_fund_popup())
         wrapper.add_widget(add_fund_btn)
 
         wrapper.add_widget(Widget(size_hint=(0.1,1))) 
         
-        delete_fund_btn = Button(text='Delete fund',size_hint=(0.4,1))
+        delete_fund_btn = self.styled_button('Delete fund',size_hint_x=0.4)
         delete_fund_btn.bind(on_release=lambda instance: self.delete_fund_popup())
         wrapper.add_widget(delete_fund_btn)
         
@@ -149,9 +161,17 @@ class MyApp(App):
 
         wrapper = BoxLayout(size_hint_y=None, height=60)
         wrapper.add_widget(Widget())  # left spacer
-        add_instalment_btn = Button(text='Add instalment', size_hint=(0.3, 1))
+        
+        add_instalment_btn = self.styled_button(text='Add instalment', size_hint_x=0.4)
         add_instalment_btn.bind(on_release=lambda instance: self.add_instalment_popup(scheme_code))
         wrapper.add_widget(add_instalment_btn)
+        
+        wrapper.add_widget(Widget(size_hint=(0.1,1)))
+
+        delete_instalment_btn = self.styled_button(text='Delete',size_hint_x=0.4)
+        delete_instalment_btn.bind(on_release=lambda instance: self.delete_instalment_popup(scheme_code))
+        wrapper.add_widget(delete_instalment_btn)
+
         wrapper.add_widget(Widget())  # right spacer
         self.root.ids.instalment_list.add_widget(wrapper)
 
@@ -165,14 +185,14 @@ class MyApp(App):
         add_instalment_screen.add_widget(self.top_label)
         
         row1 = BoxLayout(orientation='horizontal',size_hint=(1,0.2))
-        row1.add_widget(Label(text='Date: ',size_hint=(0.3,1)))
-        self.popup_date = TextInput(hint_text='in dd/mm/yy format',size_hint=(0.7,1))
+        row1.add_widget(Label(text='Date: ',size_hint=(0.35,1)))
+        self.popup_date = TextInput(hint_text='in dd/mm/yy format',size_hint=(0.65,1))
         row1.add_widget(self.popup_date)
         add_instalment_screen.add_widget(row1)
 
         row2 = BoxLayout(orientation='horizontal',size_hint=(1,0.2))
-        row2.add_widget(Label(text='Amount invested: ',size_hint=(0.3,1)))
-        self.popup_amount = TextInput(size_hint=(0.7,1))
+        row2.add_widget(Label(text='Amount: ',size_hint=(0.35,1)))
+        self.popup_amount = TextInput(size_hint=(0.65,1))
         row2.add_widget(self.popup_amount)
         add_instalment_screen.add_widget(row2)
 
@@ -186,12 +206,12 @@ class MyApp(App):
         try:
             date_input = datetime.strptime(self.popup_date.text, "%d-%m-%y")
         except:
-            check_str += "Please enter the date in the format: dd-mm-yy\n"
+            check_str += "Enter date in format: dd-mm-yy\n"
 
         try:
             amount = float(self.popup_amount.text)
         except:
-            check_str += "Please enter the valid amount"
+            check_str += "Enter valid amount"
         
         if check_str == "":
             message = add_new_instalments(scheme_code,self.popup_date.text,self.popup_amount.text)
@@ -203,6 +223,59 @@ class MyApp(App):
             self.open_fund_detail(scheme_code)
         else:
             self.top_label.text = check_str
+
+    def delete_instalment_element(self,scheme_code):
+        self.selected_delete_instalment = None
+        self.selected_instalment_button = None
+
+        delete_layout = GridLayout(cols=1, spacing=5, size_hint_y=None)
+        delete_layout.bind(minimum_height=delete_layout.setter("height"))
+
+        for row in get_instalments(scheme_code):
+            btn = self.styled_button(
+                text=f"Date: {row[2]}\nAmount: {row[3]}",
+                size_hint_y=None,
+                color=(0,0,0,1)
+            )
+
+            btn.bind(
+                on_release=lambda instance, id=row[0]: self.select_delete_instalment(instance,id)
+            )
+
+            delete_layout.add_widget(btn)
+
+        wrapper = BoxLayout(size_hint_y=None, height=60)
+        wrapper.add_widget(Widget())
+        self.delete_instalment_btn = self.styled_button(text="Delete", size_hint_x=0.4, disabled=True)
+        self.delete_instalment_btn.bind(on_release=lambda instance: self.post_delete_instalment(self.selected_delete_instalment,scheme_code))
+        wrapper.add_widget(self.delete_instalment_btn)
+        wrapper.add_widget(Widget())
+
+        delete_layout.add_widget(wrapper)
+
+        scroll = ScrollView(size_hint=(1,1))
+        scroll.add_widget(delete_layout)
+        return scroll
+
+    def select_delete_instalment(self, button, id):
+        self.delete_instalment_btn.disabled = False
+        self.selected_delete_instalment = id
+
+        if self.selected_instalment_button:
+            self.selected_instalment_button.background_color = (1, 1, 1, 1)
+
+        button.background_color = (0.2, 0.6, 1, 1)
+        self.selected_instalment_button = button
+
+    def delete_instalment_popup(self,scheme_code):
+        self.popup_delete_instalment = Popup(title='Delete Instalment', content=self.delete_instalment_element(scheme_code),size_hint=(0.84,0.6))
+        self.popup_delete_instalment.open()
+
+    def post_delete_instalment(self,id,scheme_code):
+        delete_instalment(id)
+        self.popup_delete_instalment.dismiss()
+        self.open_fund_detail(scheme_code)
+        self.load_main_screen()
         
     def load_main_dashboard(self):
         overall_return = 0.0
@@ -247,12 +320,14 @@ class MyApp(App):
         self.search_input.bind(text=lambda instance, query: self.filter_funds(query))
         
         add_fund_screen.add_widget(self.search_input)
-        add_fund_screen.add_widget(self.search_layout)
+        scroll = ScrollView(size_hint=(1,1))
+        scroll.add_widget(self.search_layout)
+        add_fund_screen.add_widget(scroll)
 
-        self.popup_add_fund_btn = Button(text="Add Fund", size_hint=(0.25,None), height=40, pos_hint={'center_x':0.5},disabled=True)
+        self.popup_add_fund_btn = Button(text="Add", size_hint=(0.25,None), pos_hint={'center_x':0.5},disabled=True)
         self.popup_add_fund_btn.bind(on_release=lambda instance: self.new_fund_submit(self.search_input.text))
         add_fund_screen.add_widget(self.popup_add_fund_btn)
-        
+
         return add_fund_screen
     
     def new_fund_submit(self,fund_name):
@@ -266,10 +341,9 @@ class MyApp(App):
         top_search = self.search_funds(query)
         for i in top_search:
             self.search_layout.add_widget(
-                Button(
+                self.styled_button(
                     text=i['schemeName'],
                     size_hint_y=None,
-                    height=20,
                     on_release=lambda instance, name=i['schemeName']: [setattr(self.search_input, "text", name), setattr(self.popup_add_fund_btn, 'disabled', False)]
                 )
             )
@@ -288,10 +362,9 @@ class MyApp(App):
         delete_layout.bind(minimum_height=delete_layout.setter("height"))
 
         for row in get_all_funds():
-            btn = Button(
+            btn = self.styled_button(
                 text=row[1],
                 size_hint_y=None,
-                height=30,
                 color=(0,0,0,1)
             )
 
@@ -303,14 +376,17 @@ class MyApp(App):
 
         wrapper = BoxLayout(size_hint_y=None, height=60)
         wrapper.add_widget(Widget())
-        self.delete_btn = Button(text="Delete Fund", size_hint=(0.4, 1),disabled=True)
+        self.delete_btn = self.styled_button(text="Delete Fund", size_hint_x=0.4,disabled=True)
         self.delete_btn.bind(on_release=lambda instance: self.post_delete_fund(self.selected_delete_fund))
         wrapper.add_widget(self.delete_btn)
         wrapper.add_widget(Widget())
 
         delete_layout.add_widget(wrapper)
 
-        return delete_layout
+        scroll = ScrollView(size_hint=(1,1))
+        scroll.add_widget(delete_layout)
+
+        return scroll
 
     def select_delete_fund(self, button, scheme_code):
         self.delete_btn.disabled = False
