@@ -8,6 +8,7 @@ from kivy.uix.popup import Popup
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.scrollview import ScrollView
 from kivy.core.window import Window
+from kivy.graphics import Color, Rectangle, Line
 
 from database import get_all_funds, get_instalments, delete_fund, delete_instalment
 from add_data import add_new_instalments, add_new_fund
@@ -24,6 +25,36 @@ class MyApp(App):
         btn.bind(size=lambda instance, value: setattr(instance, 'text_size', (instance.width, None)))
         btn.bind(texture_size=lambda instance, value: setattr(instance, 'height', max(value[1] + 20, 30)))
         return btn
+
+    def add_border(self, widget, color=(0, 0, 0, 1), width=2):
+        with widget.canvas.after:
+            Color(*color)
+            widget.border_line = Line(
+                rectangle=(widget.x, widget.y, widget.width, widget.height),
+                width=width
+            )
+
+        def update(instance, value):
+            instance.border_line.rectangle = (
+                instance.x,
+                instance.y,
+                instance.width,
+                instance.height
+            )
+
+        widget.bind(pos=update, size=update)
+
+    def add_card_background(self, widget, color=(0.17, 0.16, 0.19, 1)):
+        with widget.canvas.before:
+            Color(*color)
+            widget.card_rect = Rectangle(pos=widget.pos, size=widget.size)
+
+        widget.bind(pos=self.update_card_rect, size=self.update_card_rect)
+        return widget
+
+    def update_card_rect(self, instance, value):
+        instance.card_rect.pos = instance.pos
+        instance.card_rect.size = instance.size
 
     def on_start(self):
         Window.clearcolor = (0.03,0.03,0.03,1)
@@ -43,6 +74,8 @@ class MyApp(App):
     def load_main_screen(self):
         self.root.ids.fund_list.clear_widgets()
         self.main_dashboard = Label(text='Dashboard', size_hint_y=None, height=150)
+        
+        self.add_card_background(self.main_dashboard,(0.17, 0.16, 0.19, 1))
         self.root.ids.fund_list.add_widget(self.main_dashboard)
         
         self.load_main_dashboard()
@@ -50,6 +83,10 @@ class MyApp(App):
         for row in get_all_funds():
             btn = self.styled_button(row[1], size_hint_y=None)
             btn.bind(on_release=lambda instance, sc=row[0]: self.open_fund_detail(sc))
+            self.add_border(btn,(0.992, 0.702, 0.761, 1),2) #light pink
+            btn.background_normal = ""
+            btn.background_color = (0.686, 0.863, 0.922, 1) #light blue
+            btn.color = (0,0,0,1)
             self.root.ids.fund_list.add_widget(btn)
 
         wrapper = BoxLayout(size_hint_y=None, height=60)
@@ -61,7 +98,7 @@ class MyApp(App):
 
         wrapper.add_widget(Widget(size_hint=(0.1,1))) 
         
-        delete_fund_btn = self.styled_button('Delete fund',size_hint_x=0.4)
+        delete_fund_btn = self.styled_button('Remove fund',size_hint_x=0.4)
         delete_fund_btn.bind(on_release=lambda instance: self.delete_fund_popup())
         wrapper.add_widget(delete_fund_btn)
         
@@ -146,6 +183,7 @@ class MyApp(App):
         )
 
         dashboard = Label(text=dashboard_text, size_hint_y=None, height=120)
+        self.add_card_background(dashboard,(0.17,0.16,0.19,1))
         self.root.ids.instalment_list.add_widget(dashboard)
 
         for row in instalments_detail:
@@ -221,6 +259,7 @@ class MyApp(App):
             self.popup_amount.text = ""
 
             self.open_fund_detail(scheme_code)
+            self.load_main_screen()
         else:
             self.top_label.text = check_str
 
