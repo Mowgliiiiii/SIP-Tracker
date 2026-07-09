@@ -10,7 +10,7 @@ from kivy.uix.scrollview import ScrollView
 from kivy.core.window import Window
 from kivy.graphics import Color, Rectangle, Line
 
-from database import get_all_funds, get_instalments, delete_fund, delete_instalment
+from database import get_all_funds, get_instalments, delete_fund, delete_instalment, create_tables
 from add_data import add_new_instalments, add_new_fund
 from datetime import datetime
 import requests
@@ -69,6 +69,8 @@ class MyApp(App):
             self.all_funds = response.json()
             with open('funds_cache.json','w') as f:
                 json.dump(self.all_funds,f)
+
+        create_tables()
 
         self.load_main_screen()
     
