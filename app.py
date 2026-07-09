@@ -20,6 +20,7 @@ import os
 class MyApp(App):
     def styled_button(self, text, **kwargs):
         btn = Button(text=text, **kwargs)
+        btn.markup = True
         btn.halign = 'center'
         btn.valign = 'middle'
         btn.bind(size=lambda instance, value: setattr(instance, 'text_size', (instance.width, None)))
@@ -74,6 +75,7 @@ class MyApp(App):
     def load_main_screen(self):
         self.root.ids.fund_list.clear_widgets()
         self.main_dashboard = Label(text='Dashboard', size_hint_y=None, height=150)
+        self.main_dashboard.markup = True
         
         self.add_card_background(self.main_dashboard,(0.17, 0.16, 0.19, 1))
         self.root.ids.fund_list.add_widget(self.main_dashboard)
@@ -82,10 +84,11 @@ class MyApp(App):
 
         for row in get_all_funds():
             btn = self.styled_button(row[1], size_hint_y=None)
+            btn.text = f"[b]{btn.text}[/b]"
             btn.bind(on_release=lambda instance, sc=row[0]: self.open_fund_detail(sc))
-            self.add_border(btn,(0.992, 0.702, 0.761, 1),2) #light pink
+            self.add_border(btn,(0.9843, 0.9333, 1.0000, 1),2)
             btn.background_normal = ""
-            btn.background_color = (0.686, 0.863, 0.922, 1) #light blue
+            btn.background_color = (0.6000, 0.8745, 1.0000, 1) 
             btn.color = (0,0,0,1)
             self.root.ids.fund_list.add_widget(btn)
 
@@ -93,12 +96,14 @@ class MyApp(App):
         wrapper.add_widget(Widget())  # left spacer
         
         add_fund_btn = self.styled_button('Add Fund', size_hint_x=0.4)
+        add_fund_btn.color = (0.180, 0.800, 0.443, 1)
         add_fund_btn.bind(on_release=lambda instance: self.add_fund_popup())
         wrapper.add_widget(add_fund_btn)
 
         wrapper.add_widget(Widget(size_hint=(0.1,1))) 
         
         delete_fund_btn = self.styled_button('Remove fund',size_hint_x=0.4)
+        delete_fund_btn.color = (0.906, 0.298, 0.235, 1)
         delete_fund_btn.bind(on_release=lambda instance: self.delete_fund_popup())
         wrapper.add_widget(delete_fund_btn)
         
@@ -174,39 +179,53 @@ class MyApp(App):
         fund_data = self.load_fund_detail(scheme_code)
         instalments_detail = fund_data['instalments']
 
+        if fund_data['fund return'] >= 0:
+            color = "2ECC71"   # Green
+        else:
+            color = "E74C3C"   # Red
+
         dashboard_text = (
             f"Total investment: {fund_data['fund investment']:.2f}\n"
             f"Current value: {fund_data['fund current value']:.2f}\n"
-            f"Total return: {fund_data['fund return']:.2f} ({fund_data['fund return percent']:.2f}%)\n"
+            f"Total return: [color={color}]{fund_data['fund return']:.2f} ({fund_data['fund return percent']:.2f}%)[/color]\n"
             f"Withdrawable amount: {fund_data['fund withdrawable amount']:.2f}\n"
             f"Withdrawable profit: {fund_data['fund withdrawable profit']:.2f}"
         )
 
         dashboard = Label(text=dashboard_text, size_hint_y=None, height=120)
+        dashboard.markup = True
         self.add_card_background(dashboard,(0.17,0.16,0.19,1))
         self.root.ids.instalment_list.add_widget(dashboard)
 
         for row in instalments_detail:
+            if float(row['instalment return']) >= 0:
+                color = "2ECC71"   # Green
+            else:
+                color = "E74C3C"   # Red
             text_instalment = (
                 f"Date: {datetime.strftime(row['date'],'%d-%m-%y')}\n"
                 f"Amount invested: {row['amount']:.2f}\n"
                 f"Current value: {row['current value']}\n"
-                f"Return: {row['instalment return']}({row['instalment return percent']}%)"
+                f"Return: [color={color}]{row['instalment return']}({row['instalment return percent']}%)[/color]"
             )
 
-            instalment = Label(text=text_instalment, size_hint_y=None, height=80)
+            instalment = Label(text=text_instalment, size_hint_y=None, height=100)
+            instalment.markup = True
+            self.add_border(instalment,(0.6000, 0.8745, 1.0000, 1))
             self.root.ids.instalment_list.add_widget(instalment)
 
         wrapper = BoxLayout(size_hint_y=None, height=60)
         wrapper.add_widget(Widget())  # left spacer
         
         add_instalment_btn = self.styled_button(text='Add instalment', size_hint_x=0.4)
+        add_instalment_btn.color=(0.180, 0.800, 0.443, 1)
         add_instalment_btn.bind(on_release=lambda instance: self.add_instalment_popup(scheme_code))
         wrapper.add_widget(add_instalment_btn)
         
         wrapper.add_widget(Widget(size_hint=(0.1,1)))
 
         delete_instalment_btn = self.styled_button(text='Delete',size_hint_x=0.4)
+        delete_instalment_btn.color=(0.906, 0.298, 0.235, 1)
         delete_instalment_btn.bind(on_release=lambda instance: self.delete_instalment_popup(scheme_code))
         wrapper.add_widget(delete_instalment_btn)
 
@@ -335,10 +354,15 @@ class MyApp(App):
 
         overall_return_percent=(overall_return/overall_instalment)*100 if overall_instalment!=0 else 0
 
+        if overall_return >= 0:
+            color = "2ECC71"   # Green
+        else:
+            color = "E74C3C"   # Red
+
         main_dashboard_content = (
             f"Total investment: {overall_instalment:.2f}\n"
             f"Current value: {overall_current_value:.2f}\n"
-            f"Return: {overall_return:.2f} ({overall_return_percent:.2f}%)\n"
+            f"Return: [color={color}]{overall_return:.2f} ({overall_return_percent:.2f}%)[/color]\n"
             f"Withdrawable amount: {overall_withdrawable_amount:.2f}\n"
             f"Withdrawable profit: {overall_withdrawable_profit:.2f}"
         )
