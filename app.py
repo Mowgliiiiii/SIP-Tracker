@@ -21,10 +21,11 @@ class MyApp(App):
     def styled_button(self, text, **kwargs):
         btn = Button(text=text, **kwargs)
         btn.markup = True
+        btn.font_size = '18sp'
         btn.halign = 'center'
         btn.valign = 'middle'
         btn.bind(size=lambda instance, value: setattr(instance, 'text_size', (instance.width, None)))
-        btn.bind(texture_size=lambda instance, value: setattr(instance, 'height', max(value[1] + 20, 30)))
+        btn.bind(texture_size=lambda instance, value: setattr(instance, 'height', max(value[1] + 40, 50)))
         return btn
 
     def add_border(self, widget, color=(0, 0, 0, 1), width=2):
@@ -59,6 +60,7 @@ class MyApp(App):
 
     def on_start(self):
         Window.clearcolor = (0.03,0.03,0.03,1)
+        Window.softinput_mode = 'below_target'
 
         if os.path.exists('funds_cache.json'):
             with open('funds_cache.json','r') as f:
@@ -76,7 +78,9 @@ class MyApp(App):
     
     def load_main_screen(self):
         self.root.ids.fund_list.clear_widgets()
-        self.main_dashboard = Label(text='Dashboard', size_hint_y=None, height=150)
+        self.main_dashboard = Label(text='Dashboard', size_hint_y=None,font_size='16sp', halign='left', valign='top', padding=(10,10))
+        self.main_dashboard.bind(width=lambda instance, value: setattr(instance, 'text_size', (value, None)))
+        self.main_dashboard.bind(texture_size=lambda instance, value: setattr(instance, 'height', value[1] + 20))
         self.main_dashboard.markup = True
         
         self.add_card_background(self.main_dashboard,(0.17, 0.16, 0.19, 1))
@@ -94,22 +98,18 @@ class MyApp(App):
             btn.color = (0,0,0,1)
             self.root.ids.fund_list.add_widget(btn)
 
-        wrapper = BoxLayout(size_hint_y=None, height=60)
-        wrapper.add_widget(Widget())  # left spacer
-        
-        add_fund_btn = self.styled_button('Add Fund', size_hint_x=0.4)
+        wrapper = BoxLayout(size_hint_y=None, height=60, spacing=10, padding=(20,0))
+
+        add_fund_btn = self.styled_button('Add Fund', size_hint_x=0.5)
         add_fund_btn.color = (0.180, 0.800, 0.443, 1)
         add_fund_btn.bind(on_release=lambda instance: self.add_fund_popup())
         wrapper.add_widget(add_fund_btn)
 
-        wrapper.add_widget(Widget(size_hint=(0.1,1))) 
-        
-        delete_fund_btn = self.styled_button('Remove fund',size_hint_x=0.4)
+        delete_fund_btn = self.styled_button('Remove fund', size_hint_x=0.5)
         delete_fund_btn.color = (0.906, 0.298, 0.235, 1)
         delete_fund_btn.bind(on_release=lambda instance: self.delete_fund_popup())
         wrapper.add_widget(delete_fund_btn)
-        
-        wrapper.add_widget(Widget())  # right spacer
+
         self.root.ids.fund_list.add_widget(wrapper)
 
 
@@ -194,7 +194,9 @@ class MyApp(App):
             f"Withdrawable profit: {fund_data['fund withdrawable profit']:.2f}"
         )
 
-        dashboard = Label(text=dashboard_text, size_hint_y=None, height=120)
+        dashboard = Label(text=dashboard_text, size_hint_y=None,font_size='16sp', halign='left', valign='top', padding=(10,10))
+        dashboard.bind(width=lambda instance, value: setattr(instance, 'text_size', (value, None)))
+        dashboard.bind(texture_size=lambda instance, value: setattr(instance, 'height', value[1] + 20))
         dashboard.markup = True
         self.add_card_background(dashboard,(0.17,0.16,0.19,1))
         self.root.ids.instalment_list.add_widget(dashboard)
@@ -211,27 +213,25 @@ class MyApp(App):
                 f"Return: [color={color}]{row['instalment return']}({row['instalment return percent']}%)[/color]"
             )
 
-            instalment = Label(text=text_instalment, size_hint_y=None, height=100)
+            instalment = Label(text=text_instalment, size_hint_y=None,font_size='16sp', halign='left', valign='top', padding=(10,10))
+            instalment.bind(width=lambda instance, value: setattr(instance, 'text_size', (value, None)))
+            instalment.bind(texture_size=lambda instance, value: setattr(instance, 'height', value[1] + 20))
             instalment.markup = True
             self.add_border(instalment,(0.6000, 0.8745, 1.0000, 1))
             self.root.ids.instalment_list.add_widget(instalment)
 
-        wrapper = BoxLayout(size_hint_y=None, height=60)
-        wrapper.add_widget(Widget())  # left spacer
-        
-        add_instalment_btn = self.styled_button(text='Add instalment', size_hint_x=0.4)
+        wrapper = BoxLayout(size_hint_y=None, height=60, spacing=10, padding=(20,0))
+
+        add_instalment_btn = self.styled_button(text='Add instalment', size_hint_x=0.5)
         add_instalment_btn.color=(0.180, 0.800, 0.443, 1)
         add_instalment_btn.bind(on_release=lambda instance: self.add_instalment_popup(scheme_code))
         wrapper.add_widget(add_instalment_btn)
-        
-        wrapper.add_widget(Widget(size_hint=(0.1,1)))
 
-        delete_instalment_btn = self.styled_button(text='Delete',size_hint_x=0.4)
+        delete_instalment_btn = self.styled_button(text='Delete', size_hint_x=0.5)
         delete_instalment_btn.color=(0.906, 0.298, 0.235, 1)
         delete_instalment_btn.bind(on_release=lambda instance: self.delete_instalment_popup(scheme_code))
         wrapper.add_widget(delete_instalment_btn)
 
-        wrapper.add_widget(Widget())  # right spacer
         self.root.ids.instalment_list.add_widget(wrapper)
 
     def add_instalment_popup(self,scheme_code):
@@ -304,12 +304,10 @@ class MyApp(App):
 
             delete_layout.add_widget(btn)
 
-        wrapper = BoxLayout(size_hint_y=None, height=60)
-        wrapper.add_widget(Widget())
-        self.delete_instalment_btn = self.styled_button(text="Delete", size_hint_x=0.4, disabled=True)
+        wrapper = BoxLayout(size_hint_y=None, height=60, padding=(20,0))
+        self.delete_instalment_btn = self.styled_button(text="Delete", size_hint_x=1, disabled=True)
         self.delete_instalment_btn.bind(on_release=lambda instance: self.post_delete_instalment(self.selected_delete_instalment,scheme_code))
         wrapper.add_widget(self.delete_instalment_btn)
-        wrapper.add_widget(Widget())
 
         delete_layout.add_widget(wrapper)
 
@@ -372,13 +370,13 @@ class MyApp(App):
         self.main_dashboard.text = main_dashboard_content
 
     def add_fund_popup(self):
-        self.popup_add_fund = Popup(title='Add Fund', content=self.add_fund_element(),size_hint=(0.84,0.6))
+        self.popup_add_fund = Popup(title='Add Fund', content=self.add_fund_element(),size_hint=(0.9,0.95))
         self.popup_add_fund.open()
 
     def add_fund_element(self):
-        add_fund_screen = BoxLayout(orientation='vertical')
+        add_fund_screen = BoxLayout(orientation='vertical', padding=(10,10,10,10), spacing=10)
         
-        self.search_input = TextInput(hint_text='Search Fund Name', size_hint=(1, None), height = 40)
+        self.search_input = TextInput(hint_text='Search Fund Name', font_size='16sp', multiline=False, size_hint=(1, None), height=65)
         self.search_layout = GridLayout(spacing=10, cols=1, size_hint_x=1, size_hint_y=None, height=290)
         self.search_layout.bind(minimum_height=self.search_layout.setter('height'))
         
@@ -389,7 +387,7 @@ class MyApp(App):
         scroll.add_widget(self.search_layout)
         add_fund_screen.add_widget(scroll)
 
-        self.popup_add_fund_btn = Button(text="Add", size_hint=(0.25,None), pos_hint={'center_x':0.5},disabled=True)
+        self.popup_add_fund_btn = Button(text="Add", font_size='18sp', size_hint=(0.35,None), height=55, pos_hint={'center_x':0.5},disabled=True)
         self.popup_add_fund_btn.bind(on_release=lambda instance: self.new_fund_submit(self.search_input.text))
         add_fund_screen.add_widget(self.popup_add_fund_btn)
 
@@ -439,12 +437,10 @@ class MyApp(App):
 
             delete_layout.add_widget(btn)
 
-        wrapper = BoxLayout(size_hint_y=None, height=60)
-        wrapper.add_widget(Widget())
-        self.delete_btn = self.styled_button(text="Delete Fund", size_hint_x=0.4,disabled=True)
+        wrapper = BoxLayout(size_hint_y=None, height=60, padding=(20,0))
+        self.delete_btn = self.styled_button(text="Delete", size_hint_x=1, disabled=True)
         self.delete_btn.bind(on_release=lambda instance: self.post_delete_fund(self.selected_delete_fund))
         wrapper.add_widget(self.delete_btn)
-        wrapper.add_widget(Widget())
 
         delete_layout.add_widget(wrapper)
 
