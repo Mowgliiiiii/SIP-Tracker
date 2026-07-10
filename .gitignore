@@ -3,4 +3,5 @@ delete.py
 check.py
 design.txt
 sip_tracker.db
-
+buildozer.spec
+.buildozer
